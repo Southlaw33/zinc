@@ -1,4 +1,5 @@
 "use client";
+import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect, useCallback } from "react";
 
 type Post = {
@@ -7,48 +8,26 @@ type Post = {
 };
 
 const ClientPostsList = () => {
-  const [isLoading, setLoading] = useState(true);
-  const [data, setData] = useState<Post[] | null>(null);
-  const [error, setError] = useState<Error | null>(null);
+  const { data, isPending, error } = useQuery<Post[]>({
+    queryKey: ["posts"],
+    queryFn: async () => {
+      const respone = await fetch("http://localhost:3000/posts");
+      return await respone.json();
+    },
+  });
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("http://localhost:3000/posts");
-      if (response.status !== 200) {
-        setLoading(false);
-        setError(new Error("Something went wrong"));
-      }
-      const posts: Post[] = await response.json();
-      setLoading(false);
-      setData(posts);
-      setError(null); // Clear any previous errors
-    } catch (e) {
-      setLoading(false);
-      setError(e as Error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  if (isLoading) {
-    return <div className="container mx-auto">Loading...</div>;
+  if (isPending) {
+    return <div>Loading...</div>;
   }
 
   if (error) {
-    return <div>Error!!</div>;
+    return <div>Error !!</div>;
   }
-
   return (
     <div className="container mx-auto">
-      <h1>Client Posts List</h1>
-      <ul>
-        {data!.map((post) => (
-          <div key={post.id}>{post.title}</div>
-        ))}
-      </ul>
+      {data.map((post) => {
+        return <div key={post.id}>{post.title}</div>;
+      })}
     </div>
   );
 };
